@@ -18,3 +18,6 @@ $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/cache/frontend/class.t3lib_cach
 
 $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['pageLoadedFromCache'][$_EXTKEY]=
     \Qbus\NginxCache\Hooks\PageLoadedFromCacheHook::class . '->loadedFromCache';
+
+$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['contentPostProc-output'][$_EXTKEY] =
+    \Qbus\NginxCache\Hooks\DebugTypo3CacheHit::class . '->debug';
