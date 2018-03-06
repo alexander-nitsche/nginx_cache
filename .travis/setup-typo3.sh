@@ -12,6 +12,7 @@ rm -rf .Build/
 echo "DROP DATABASE IF EXISTS $DBNAME;" | mysql -u root
 
 rm -f composer.lock
+echo "$TYPO3_VERSION"
 composer require "$TYPO3_VERSION"
 #Restore composer.json (was changed by the prior composer require)
 git checkout -- composer.json
