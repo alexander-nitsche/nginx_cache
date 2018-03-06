@@ -52,6 +52,7 @@
             "[ -L .Build/Web/typo3conf/ext/nginx_cache ] || ln -snvf ../../../../. .Build/Web/typo3conf/ext/nginx_cache"
         ]
     },
+    "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
             "dev-master": "1.0.x-dev"
