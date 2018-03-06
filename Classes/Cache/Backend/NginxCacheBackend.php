@@ -3,7 +3,9 @@ namespace Qbus\NginxCache\Cache\Backend;
 
 use TYPO3\CMS\Core\Cache\Exception;
 use TYPO3\CMS\Core\Cache\Exception\InvalidDataException;
+use TYPO3\CMS\Core\Configuration\ExtensionConfiguration;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+
 
 /**
  * nginx_cache – TYPO3 extension to manage the nginx cache
@@ -80,14 +82,20 @@ class NginxCacheBackend extends \TYPO3\CMS\Core\Cache\Backend\Typo3DatabaseBacke
      */
     public function flush()
     {
-        /* FIXME: this won't work for cli requests. We could try do derive the site_url from
-         * existing cache entries (using findIdentifierByTag?).
-         * Or introduce a configure option to set the flushAll URL. */
-        if (TYPO3_REQUESTTYPE & TYPO3_REQUESTTYPE_CLI) {
-            return;
+        $url = '';
+        if (class_exists(ExtensionConfiguration::class)) {
+            $url = GeneralUtility::makeInstance(ExtensionConfiguration::class)->get('nginx_cache', 'upstream');
         }
 
-        $url = GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . '*';
+        if (!$url) {
+            /* FIXME: this won't work for cli requests. We could try do derive the site_url from
+             * existing cache entries (using findIdentifierByTag?).
+             * Or introduce a configure option to set the flushAll URL. */
+            if (TYPO3_REQUESTTYPE & TYPO3_REQUESTTYPE_CLI) {
+                return;
+            }
+            $url = GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . '*';
+        }
         $this->purge($url);
 
         parent::flush();
