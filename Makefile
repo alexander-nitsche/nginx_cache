@@ -18,27 +18,12 @@ check: .travis/assert-1.1.sh
 	HOST=http://localhost:8088 .travis/run-tests.sh
 
 	PATH=${PHP72_PATH} .travis/install-nginx.sh
-	PATH=${PHP72_PATH} .travis/setup-typo3.sh typo3/minimal:~9.0.0
+	PATH=${PHP72_PATH} .travis/setup-typo3.sh typo3/minimal:^9.5.0 typo3/cms-adminpanel:^9.5.0
 	HOST=http://localhost:8088 PATH=${PHP72_PATH} .travis/run-tests.sh
 
 	pkill -F /tmp/php-fpm.pid
 	pkill -F /tmp/nginx.pid
 	rm -rf .travis/nginx/
-
-check-9.0: .travis/assert-1.1.sh
-	PATH=${PHP72_PATH} .travis/install-nginx.sh
-	PATH=${PHP72_PATH} .travis/setup-typo3.sh typo3/minimal:~9.0.0
-	HOST=http://localhost:8088 PATH=${PHP72_PATH} .travis/run-tests.sh
-
-check-9.1: .travis/assert-1.1.sh
-	PATH=${PHP72_PATH} .travis/install-nginx.sh
-	PATH=${PHP72_PATH} .travis/setup-typo3.sh typo3/minimal:~9.1.0
-	HOST=http://localhost:8088 PATH=${PHP72_PATH} .travis/run-tests.sh
-
-check-9.2: .travis/assert-1.1.sh
-	PATH=${PHP72_PATH} .travis/install-nginx.sh
-	PATH=${PHP72_PATH} .travis/setup-typo3.sh typo3/minimal:~9.2.0@dev
-	HOST=http://localhost:8088 PATH=${PHP72_PATH} .travis/run-tests.sh
 
 t3x-pack:
 	git archive -o $(EXTKEY)_`git describe --always --tags`.zip HEAD
