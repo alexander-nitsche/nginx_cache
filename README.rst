@@ -120,3 +120,54 @@ Advantages over nc_staticfilecache
 - Performant support for starttime/endtime (as long as TYPO3 does not fail to calculate the correct cache time)
   (to be fair: nc_staticfilecache provides that through auto-generated .htaccess files,
   but only for apache, not for nginx)
+
+Lowlevel Customization
+----------------------
+
+Custom URL Purger
+*****************
+
+You may provide a custom implementation of the `\Qbus\NginxCache\PurgerInterface`
+in order to add custom logic how URLs should be purged.
+Usecases may be the addition of http basic authentication headers or routing to multiple load balancers
+
+Register your custom purger in `ext_localconf.php`:
+
+.. code-block:: php
+
+    $GLOBALS['TYPO3_CONF_VARS']['SYS']['caching']['cacheConfigurations']['nginx_cache']['options']['purger'] =
+	\MyNamespace\MyExtension\MyCustomNginxCachePurger::class;
+
+
+An example that adds http basic authentication:
+
+.. code-block:: php
+
+    <?php
+    namespace MyNamespace\MyExtension;
+
+    use GuzzleHttp\Exception\RequestException;
+    use Qbus\NginxCache\PurgerInterface;
+    use TYPO3\CMS\Core\Http\RequestFactory;
+
+    class MyCustomNginxCachePurger implements PurgerInterface
+    {
+        public function purge($url)
+        {
+            $content = '';
+            $options = [
+                'headers' => [
+                    'Authorization' => 'Basic ' . base64_encode('user:password')
+                ]
+            ];
+
+            $requestFactory = GeneralUtility::makeInstance(RequestFactory::class);
+            $response = $requestFactory->request($url, 'PURGE', $options);
+
+            if ($response->getStatusCode() === 200 && $response->getHeader('Content-Type') === 'text/plain') {
+                $content = $response->getBody()->getContents();
+            }
+
+            return $content;
+        }
+    }

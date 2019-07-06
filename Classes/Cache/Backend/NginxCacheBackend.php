@@ -1,6 +1,8 @@
 <?php
 namespace Qbus\NginxCache\Cache\Backend;
 
+use Qbus\NginxCache\Purger;
+use Qbus\NginxCache\PurgerInterface;
 use TYPO3\CMS\Core\Cache\Backend\TransientBackendInterface;
 use TYPO3\CMS\Core\Cache\Exception;
 use TYPO3\CMS\Core\Cache\Exception\InvalidDataException;
@@ -29,6 +31,16 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
  */
 class NginxCacheBackend extends \TYPO3\CMS\Core\Cache\Backend\Typo3DatabaseBackend implements TransientBackendInterface
 {
+    /**
+     * @var string
+     */
+    protected $purgerClassName = Purger::class;
+
+    /**
+     * @var PurgerInterface
+     */
+    protected $purger;
+
     /**
      * Saves data in a cache file.
      *
@@ -69,7 +81,7 @@ class NginxCacheBackend extends \TYPO3\CMS\Core\Cache\Backend\Typo3DatabaseBacke
             return false;
         }
 
-        $this->purge($url);
+        $this->getPurger()->purge($url);
 
         return parent::remove($entryIdentifier);
     }
@@ -89,7 +101,7 @@ class NginxCacheBackend extends \TYPO3\CMS\Core\Cache\Backend\Typo3DatabaseBacke
         }
 
         $url = GeneralUtility::getIndpEnv('TYPO3_SITE_URL') . '*';
-        $this->purge($url);
+        $this->getPurger()->purge($url);
 
         parent::flush();
     }
@@ -109,44 +121,31 @@ class NginxCacheBackend extends \TYPO3\CMS\Core\Cache\Backend\Typo3DatabaseBacke
     }
 
     /**
-     * @param  string $url
-     * @return string
+     * @return PurgerInterface
      */
-    protected function purge($url)
+    protected function getPurger()
     {
-        $content = '';
-
-        /* RequestFactory is available as of TYPO3 8.1 */
-        if (class_exists('\\TYPO3\\CMS\\Core\\Http\\RequestFactory')) {
-            try {
-                /** @var \TYPO3\CMS\Core\Http\RequestFactory $requestFactory */
-                $requestFactory = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Http\RequestFactory::class);
-                $response = $requestFactory->request($url, 'PURGE');
-
-                if ($response->getStatusCode() === 200) {
-                    if ($response->getHeader('Content-Type') === 'text/plain') {
-                        $content = $response->getBody()->getContents();
-                    }
-                }
-            } catch (\GuzzleHttp\Exception\RequestException $e) {
-                error_log("request for url '" . $url . "' failed.");
-                error_log($e->getMessage());
-                throw $e;
-            }
-
-        } else {
-            try {
-                $httpRequest = GeneralUtility::makeInstance(\TYPO3\CMS\Core\Http\HttpRequest::class, $url);
-                $httpRequest->setMethod('PURGE');
-
-                $content = $httpRequest->send()->getBody();
-            } catch (\Exception $e) {
+        if ($this->purger === null) {
+            $this->purger = GeneralUtility::makeInstance($this->purgerClassName);
+            if (!$this->purger instanceof PurgerInterface) {
+                throw new \InvalidArgumentException(
+                    'The configured nginx cache purger "' . $this->purgerClassName . '" needs to implement the PurgerInterface.',
+                    1562388273
+                );
             }
         }
+        return $this->purger;
+    }
 
-        /* Temporary */
-        error_log($content);
-
-        return $content;
+    /**
+     * Setter, called by AbstractCacheBackend when a custom purger
+     * implementation has been specified in the cacheConfiguration.
+     *
+     * @param string $purgerClassName
+     */
+    public function setPurger($purgerClassName)
+    {
+        $this->purgerClassName = $purgerClassName;
+        $this->purger = null;
     }
 }
